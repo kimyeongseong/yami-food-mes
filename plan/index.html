@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>이동 중</title>
+<style>
+  :root{ --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --dim:#6e6e73; --line:#d2d2d7; --blue:#0071e3; }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --card:#1c1c1e; --ink:#f5f5f7; --dim:#98989d; --line:#38383a; --blue:#0a84ff; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
+        background:var(--bg); color:var(--ink);
+        font:15px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  .card{ width:100%; max-width:380px; background:var(--card); border:1px solid var(--line);
+         border-radius:20px; padding:30px 28px; text-align:center; }
+  h1{ margin:0 0 6px; font-size:18px; font-weight:650; letter-spacing:-.3px; }
+  p{ margin:0; color:var(--dim); font-size:13.5px; }
+  .spin{ width:22px; height:22px; margin:0 auto 16px; border-radius:50%;
+         border:2px solid var(--line); border-top-color:var(--blue); animation:t .8s linear infinite; }
+  @keyframes t{ to{ transform:rotate(360deg); } }
+  a{ color:var(--blue); }
+  .hide{ display:none; }
+</style>
+</head><body>
+  <div class="card">
+    <div class="spin" id="spin"></div>
+    <h1 id="head">사내 시스템으로 이동합니다</h1>
+    <p id="note">잠시만 기다려 주십시오.</p>
+  </div>
+
+<script>
+/* 이 페이지에는 내용이 없다 — 어디로 가야 하는지만 안다.
+   실제 화면과 문서는 사내에서 직접 돌리는 서버에 있고, 계정으로 로그인해야 열린다.
+   그 서버 주소는 무료 터널이라 20분쯤마다 바뀌므로, 서버가 스스로 적어 두는
+   이정표(bridge 가지의 bridge.json)를 읽어 그리로 넘긴다.
+
+   여기에 주소가 적혀 있어도 열쇠가 되지는 않는다 — 열쇠는 계정이다. */
+(function(){
+  var PTR = [
+    'https://api.github.com/repos/kimyeongseong/yami-food-mes/contents/bridge.json?ref=bridge&t=' + Date.now(),
+    'https://raw.githubusercontent.com/kimyeongseong/yami-food-mes/bridge/bridge.json?v=' + Date.now()
+  ];
+  var HEAD = { 'Accept': 'application/vnd.github.raw+json' };
+  var BASE = '/yami-food-mes';
+
+  /* 보던 자리를 그대로 들고 간다 — /plan/ 로 들어왔으면 저쪽 /plan/ 으로 */
+  function rest(){
+    var p = location.pathname;
+    if(p.indexOf(BASE) === 0) p = p.slice(BASE.length);
+    return (p || '/') + location.search + location.hash;
+  }
+
+  function stuck(){
+    document.getElementById('spin').className = 'hide';
+    document.getElementById('head').textContent = '지금은 이동할 수 없습니다';
+    document.getElementById('note').textContent = '사내 담당자에게 접속 주소를 문의하십시오.';
+  }
+
+  (async function(){
+    for(var i = 0; i < PTR.length; i++){
+      try{
+        var res = await fetch(PTR[i], { cache: 'no-store', headers: i === 0 ? HEAD : undefined });
+        if(!res.ok) continue;
+        var d = await res.json();
+        if(d && typeof d.url === 'string' && /^https:\/\//.test(d.url)){
+          location.replace(d.url.replace(/\/$/, '') + rest());
+          return;
+        }
+      }catch(e){}
+    }
+    stuck();
+  })();
+})();
+</script>
+</body></html>
